@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chute Status Display</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f0f0f0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .header {
+        background-color: #2c3e50;
+        color: white;
+        text-align: center;
+        padding: 15px 0;
+        font-size: 2rem;
+        font-weight: bold;
+        flex-shrink: 0;
+      }
+
+      .main-container {
+        flex: 1;
+        display: flex;
+        padding: 20px;
+        gap: 20px;
+      }
+
+      .chute-grid {
+        flex: 1;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        /* Grid layout will be set dynamically via JavaScript */
+      }
+
+      .chute-box {
+        background-color: #27ae60;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        /* Size will be set dynamically via JavaScript */
+      }
+
+      .chute-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .chute-name {
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+      }
+
+      .chute-count {
+        font-size: 1.5rem;
+        font-weight: normal;
+      }
+
+      .chute-count {
+        text-align: right;
+        align-self: flex-end;
+      }
+
+      /* Chute status colors */
+      .chute-normal {
+        background-color: #27ae60;
+      }
+
+      .chute-blocked {
+        background-color: #e74c3c;
+      }
+
+      .chute-full {
+        background-color: #f39c12;
+      }
+
+      .legend {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 250px;
+        flex-shrink: 0;
+      }
+
+      .legend h3 {
+        margin-bottom: 15px;
+        color: #2c3e50;
+        text-align: center;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        margin-right: 10px;
+      }
+
+      .legend-normal {
+        background-color: #27ae60;
+      }
+
+      .legend-blocked {
+        background-color: #e74c3c;
+      }
+
+      .legend-full {
+        background-color: #f39c12;
+      }
+
+      .legend-text {
+        color: #2c3e50;
+        font-weight: 500;
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 800px) {
+        .main-container {
+          flex-direction: column;
+        }
+
+        .legend {
+          width: 100%;
+          order: -1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">Chute Status</div>
+
+    <div class="main-container">
+      <div class="chute-grid" id="chuteGrid">
+        <!-- Chutes will be dynamically generated here -->
+      </div>
+
+      <div class="legend">
+        <h3>Status Legend</h3>
+        <div class="legend-item">
+          <div class="legend-color legend-normal"></div>
+          <span class="legend-text">Normal</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color legend-full"></div>
+          <span class="legend-text">Full</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color legend-blocked"></div>
+          <span class="legend-text">Blocked</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Configuration
+      const NUM_CHUTES = 112; // Adjust this number as needed
+
+      // Calculate optimal grid layout based on screen size and number of chutes
+      function calculateGridLayout() {
+        const grid = document.getElementById("chuteGrid");
+
+        // Get actual viewport dimensions
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // Account for header height and padding
+        const header = document.querySelector(".header");
+        const headerHeight = header ? header.offsetHeight : 0;
+
+        // Calculate available space for the grid
+        const legendWidth = window.innerWidth > 800 ? 270 : 0; // Legend width + gap
+        const padding = 40; // Total padding (20px on each side)
+        const gap = 20; // Gap between main container elements
+
+        const availableWidth = viewportWidth - legendWidth - padding - gap;
+        const availableHeight = viewportHeight - headerHeight - padding;
+
+        // Find optimal grid dimensions
+        let bestCols = 1;
+        let bestRows = NUM_CHUTES;
+        let bestChuteSize = 0;
+        let bestChuteWidth = 0;
+        let bestChuteHeight = 0;
+
+        // Try different column configurations to find the best fit
+        for (let cols = 1; cols <= NUM_CHUTES; cols++) {
+          const rows = Math.ceil(NUM_CHUTES / cols);
+
+          // Calculate chute dimensions for this configuration
+          const gapSize = 10;
+          const totalGapWidth = (cols - 1) * gapSize;
+          const totalGapHeight = (rows - 1) * gapSize;
+
+          const chuteWidth = Math.floor(
+            (availableWidth - totalGapWidth) / cols
+          );
+          const chuteHeight = Math.floor(
+            (availableHeight - totalGapHeight) / rows
+          );
+
+          // Calculate aspect ratio based on available container space
+          const containerAspectRatio = availableWidth / availableHeight;
+          const targetHeight = Math.floor(chuteWidth / containerAspectRatio);
+
+          // Check if both dimensions fit within available space
+          if (
+            chuteWidth >= 60 &&
+            targetHeight >= 30 &&
+            targetHeight <= chuteHeight
+          ) {
+            const chuteArea = chuteWidth * targetHeight;
+            if (chuteArea > bestChuteSize) {
+              bestCols = cols;
+              bestRows = rows;
+              bestChuteSize = chuteArea;
+              bestChuteWidth = chuteWidth;
+              bestChuteHeight = targetHeight;
+            }
+          }
+        }
+
+        // If no good fit found, use a more compact layout
+        if (bestChuteSize === 0) {
+          bestCols = Math.ceil(
+            Math.sqrt(NUM_CHUTES * (availableWidth / availableHeight))
+          );
+          bestRows = Math.ceil(NUM_CHUTES / bestCols);
+
+          const gapSize = 8; // Smaller gaps for compact layout
+          const totalGapWidth = (bestCols - 1) * gapSize;
+          const totalGapHeight = (bestRows - 1) * gapSize;
+
+          bestChuteWidth = Math.floor(
+            (availableWidth - totalGapWidth) / bestCols
+          );
+          const containerAspectRatio = availableWidth / availableHeight;
+          bestChuteHeight = Math.floor(bestChuteWidth / containerAspectRatio);
+
+          // If height doesn't fit, adjust based on available height
+          const maxHeight = Math.floor(
+            (availableHeight - totalGapHeight) / bestRows
+          );
+          if (bestChuteHeight > maxHeight) {
+            bestChuteHeight = maxHeight;
+            bestChuteWidth = Math.floor(bestChuteHeight * containerAspectRatio);
+          }
+
+          bestChuteSize = bestChuteWidth * bestChuteHeight;
+
+          // Update gap size in CSS
+          grid.style.gap = gapSize + "px";
+        } else {
+          grid.style.gap = "10px";
+        }
+
+        // Ensure minimum size while maintaining aspect ratio
+        const containerAspectRatio = availableWidth / availableHeight;
+        if (bestChuteWidth < 60) {
+          bestChuteWidth = 60;
+          bestChuteHeight = Math.floor(bestChuteWidth / containerAspectRatio);
+        }
+        if (bestChuteHeight < 30) {
+          bestChuteHeight = 30;
+          bestChuteWidth = Math.floor(bestChuteHeight * containerAspectRatio);
+        }
+
+        // Apply the calculated layout
+        grid.style.gridTemplateColumns = `repeat(${bestCols}, ${bestChuteWidth}px)`;
+        grid.style.gridTemplateRows = `repeat(${bestRows}, ${bestChuteHeight}px)`;
+        grid.style.justifyContent = "center";
+        grid.style.alignContent = "center";
+
+        // Calculate font sizes based on chute dimensions - larger for rectangular chutes
+        const baseFontSize = Math.min(bestChuteWidth, bestChuteHeight) * 0.15;
+        const nameFontSize = Math.max(baseFontSize * 1.2, 12); // Larger font for chute names
+        const countFontSize = Math.max(baseFontSize, 10);
+
+        // Apply dynamic styles to all chute boxes
+        const chuteBoxes = document.querySelectorAll(".chute-box");
+        chuteBoxes.forEach((box) => {
+          box.style.width = bestChuteWidth + "px";
+          box.style.height = bestChuteHeight + "px";
+          box.style.padding =
+            Math.max(Math.min(bestChuteWidth, bestChuteHeight) * 0.08, 6) +
+            "px";
+          box.style.borderRadius =
+            Math.max(Math.min(bestChuteWidth, bestChuteHeight) * 0.08, 6) +
+            "px";
+
+          const nameEl = box.querySelector(".chute-name");
+          const countEl = box.querySelector(".chute-count");
+
+          if (nameEl) nameEl.style.fontSize = nameFontSize + "px";
+          if (countEl) countEl.style.fontSize = countFontSize + "px";
+        });
+
+        console.log(
+          `Grid: ${bestCols}x${bestRows}, Chute size: ${bestChuteWidth}x${bestChuteHeight}px, Total chutes: ${NUM_CHUTES}`
+        );
+      }
+
+      // Generate chute data with random statuses and counts for demonstration
+      function generateChuteData() {
+        const chutes = [];
+        const statuses = ["normal", "blocked", "full"];
+
+        for (let i = 1; i <= NUM_CHUTES; i++) {
+          const chuteNumber = i.toString().padStart(4, "0");
+          const status = statuses[Math.floor(Math.random() * statuses.length)];
+          const itemCount =
+            status === "blocked" ? 0 : Math.floor(Math.random() * 100);
+
+          chutes.push({
+            name: `CHU${chuteNumber}`,
+            count: itemCount,
+            status: status,
+          });
+        }
+
+        return chutes;
+      }
+
+      // Render chutes to the grid
+      function renderChutes(chutes) {
+        const grid = document.getElementById("chuteGrid");
+        grid.innerHTML = "";
+
+        chutes.forEach((chute) => {
+          const chuteElement = document.createElement("div");
+          chuteElement.className = `chute-box chute-${chute.status}`;
+
+          chuteElement.innerHTML = `
+                    <div class="chute-name">${chute.name}</div>
+                    <div class="chute-count">${chute.count}</div>
+                `;
+
+          grid.appendChild(chuteElement);
+        });
+
+        // Calculate and apply optimal layout after rendering
+        setTimeout(calculateGridLayout, 0);
+      }
+
+      // Update chute data periodically (simulation)
+      function updateChutes() {
+        const chutes = generateChuteData();
+        renderChutes(chutes);
+      }
+
+      // Initialize the display
+      updateChutes();
+
+      // Recalculate layout on window resize
+      window.addEventListener("resize", () => {
+        setTimeout(calculateGridLayout, 100);
+      });
+
+      // Update every 5 seconds for demonstration
+      setInterval(updateChutes, 5000);
+
+      // Optional: Add click handlers for chutes
+      document
+        .getElementById("chuteGrid")
+        .addEventListener("click", function (e) {
+          const chuteBox = e.target.closest(".chute-box");
+          if (chuteBox) {
+            const chuteName = chuteBox.querySelector(".chute-name").textContent;
+            console.log(`Clicked on ${chuteName}`);
+            // Add any additional interaction logic here
+          }
+        });
+    </script>
+  </body>
+</html>
