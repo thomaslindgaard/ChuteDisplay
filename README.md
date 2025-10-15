@@ -13,9 +13,10 @@ A real-time HTML-based display system for monitoring chute status on sorting equ
 
 ### Chute Organization
 
-- **Sequential Naming**: Chutes named CHU0001, CHU0002, etc. with zero-padded 4-digit numbers
-- **Item Count Display**: Shows current number of items headed for each chute
+- **Sequential Naming**: Chutes named CHU001, CHU002, etc. with zero-padded 3-digit numbers
+- **Maximized Text Display**: Item counts and chute names sized to use maximum available space
 - **Human-Friendly Navigation**: Grid layout optimized for quick visual scanning and chute location
+- **Column Preferences**: Prioritizes layouts with columns divisible by 10, then by 5 for easy navigation
 
 ### Status Indicators
 
@@ -30,19 +31,23 @@ A real-time HTML-based display system for monitoring chute status on sorting equ
 You can customize the display using URL parameters:
 
 - **Number of Chutes**: `index.html?chutes=150`
+- **Column Override**: `index.html?columns=20` (must be divisible by 10)
+- **Combined Parameters**: `index.html?chutes=200&columns=20`
 - **Examples**:
-  - `index.html` - Uses automatically calculated optimal number
+  - `index.html` - Uses default 112 chutes with automatic layout
   - `index.html?chutes=80` - Shows exactly 80 chutes
-  - `index.html?chutes=200` - Shows 200 chutes
+  - `index.html?chutes=200&columns=10` - 200 chutes in 10 columns (20 rows)
+  - `index.html?columns=30` - Forces 30 columns regardless of chute count
 
-### Automatic Optimization
+### Layout Intelligence
 
-When no URL parameter is provided, the system automatically calculates the optimal number of chutes based on:
+The system includes several optimization features:
 
-- Available screen space
-- Minimum readable chute size (40×25px)
-- Numbers divisible by 10 for easy navigation
-- Target range: 10-500 chutes
+- **Automatic Chute Sizing**: Uses maximum available screen space for optimal readability
+- **Font Maximization**: Item counts and chute names sized to fill available space
+- **Column Preferences**: Prioritizes columns divisible by 10, then by 5, for easy navigation
+- **Full Height Usage**: Chutes expand to use full vertical space while maintaining width > height
+- **Minimal Padding**: Asymmetric padding (reduced horizontal) to maximize text space
 
 ## Layout Algorithm
 
@@ -57,7 +62,8 @@ When no URL parameter is provided, the system automatically calculates the optim
 ### Human Navigation
 
 - **Logical Grouping**: Arranged in rows and columns for systematic scanning
-- **Mental Math Friendly**: Easy to calculate chute positions (e.g., CHU0087 = row 9, column 7)
+- **Mental Math Friendly**: Easy to calculate chute positions (e.g., CHU087 = row 9, column 7)
+- **Bottom Legend**: Horizontal status legend at bottom maximizes chute display area
 - **Visual Consistency**: Uniform spacing and sizing across all chutes
 
 ## Technical Specifications
@@ -165,7 +171,7 @@ Each chute object contains:
 
 ```javascript
 {
-  name: "CHU0001",     // Chute identifier
+  name: "CHU001",      // Chute identifier (3-digit format)
   count: 42,           // Number of items
   status: "normal"     // Status: normal, full, blocked
 }
@@ -173,9 +179,10 @@ Each chute object contains:
 
 ### Key Functions
 
-- `calculateGridLayout()`: Optimizes chute sizing and positioning
+- `calculateGridLayout()`: Optimizes chute sizing, positioning, and font scaling
 - `generateChuteData()`: Creates/updates chute data (replace for production)
 - `renderChutes()`: Updates DOM with current chute information
+- `getConfigFromURL()`: Parses URL parameters for chute count and column overrides
 
 ## License
 
