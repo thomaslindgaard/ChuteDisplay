@@ -179,8 +179,22 @@
     </div>
 
     <script>
+      // Get number of chutes from URL parameter or use default
+      function getNumChutesFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const chuteParam = urlParams.get("chutes");
+        if (chuteParam) {
+          const numChutes = parseInt(chuteParam);
+          if (numChutes > 0 && numChutes <= 1000) {
+            // Reasonable limits
+            return numChutes;
+          }
+        }
+        return 112; // Default value
+      }
+
       // Configuration
-      const NUM_CHUTES = 112; // Adjust this number as needed
+      const NUM_CHUTES = getNumChutesFromURL();
 
       // Calculate optimal grid layout based on screen size and number of chutes
       function calculateGridLayout() {
