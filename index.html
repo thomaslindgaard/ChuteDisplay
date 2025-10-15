@@ -33,15 +33,16 @@
       .main-container {
         flex: 1;
         display: flex;
-        padding: 20px;
-        gap: 20px;
+        padding: 10px;
       }
 
       .chute-grid {
-        flex: 1;
+        width: 100%;
+        height: 100%;
         display: grid;
-        gap: 10px;
-        align-content: start;
+        gap: 8px;
+        align-content: center;
+        justify-content: center;
         /* Grid layout will be set dynamically via JavaScript */
       }
 
@@ -97,23 +98,32 @@
 
       .legend {
         background-color: white;
-        border-radius: 10px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        width: 250px;
+        border-radius: 10px 10px 0 0;
+        padding: 15px 20px;
+        box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+        width: 100%;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
       }
 
       .legend h3 {
-        margin-bottom: 15px;
+        margin: 0 20px 0 0;
         color: #2c3e50;
-        text-align: center;
+        font-size: 1.1rem;
+      }
+
+      .legend-items {
+        display: flex;
+        gap: 30px;
       }
 
       .legend-item {
         display: flex;
         align-items: center;
-        margin-bottom: 10px;
+        margin: 0;
       }
 
       .legend-color {
@@ -141,14 +151,18 @@
       }
 
       /* Responsive adjustments */
-      @media (max-width: 800px) {
-        .main-container {
+      @media (max-width: 600px) {
+        .legend {
           flex-direction: column;
+          gap: 15px;
         }
 
-        .legend {
-          width: 100%;
-          order: -1;
+        .legend h3 {
+          margin: 0 0 10px 0;
+        }
+
+        .legend-items {
+          gap: 20px;
         }
       }
     </style>
@@ -160,9 +174,11 @@
       <div class="chute-grid" id="chuteGrid">
         <!-- Chutes will be dynamically generated here -->
       </div>
+    </div>
 
-      <div class="legend">
-        <h3>Status Legend</h3>
+    <div class="legend">
+      <h3>Status Legend</h3>
+      <div class="legend-items">
         <div class="legend-item">
           <div class="legend-color legend-normal"></div>
           <span class="legend-text">Normal</span>
@@ -208,13 +224,14 @@
         const header = document.querySelector(".header");
         const headerHeight = header ? header.offsetHeight : 0;
 
-        // Calculate available space for the grid
-        const legendWidth = window.innerWidth > 800 ? 270 : 0; // Legend width + gap
-        const padding = 40; // Total padding (20px on each side)
-        const gap = 20; // Gap between main container elements
+        // Calculate available space for the grid - use maximum viewport space
+        const legend = document.querySelector(".legend");
+        const legendHeight = legend ? legend.offsetHeight : 60; // Legend height
+        const padding = 20; // Minimal padding (10px on each side)
 
-        const availableWidth = viewportWidth - legendWidth - padding - gap;
-        const availableHeight = viewportHeight - headerHeight - padding;
+        const availableWidth = viewportWidth - padding;
+        const availableHeight =
+          viewportHeight - headerHeight - legendHeight - padding;
 
         // Find optimal grid dimensions
         let bestCols = 1;
@@ -228,7 +245,7 @@
           const rows = Math.ceil(NUM_CHUTES / cols);
 
           // Calculate chute dimensions for this configuration
-          const gapSize = 10;
+          const gapSize = 8;
           const totalGapWidth = (cols - 1) * gapSize;
           const totalGapHeight = (rows - 1) * gapSize;
 
@@ -239,15 +256,14 @@
             (availableHeight - totalGapHeight) / rows
           );
 
-          // Calculate aspect ratio based on available container space
-          const containerAspectRatio = availableWidth / availableHeight;
-          const targetHeight = Math.floor(chuteWidth / containerAspectRatio);
+          // Use full available height and ensure width is greater than height
+          const targetHeight = chuteHeight;
 
-          // Check if both dimensions fit within available space
+          // Check if both dimensions fit and width is greater than height
           if (
-            chuteWidth >= 60 &&
-            targetHeight >= 30 &&
-            targetHeight <= chuteHeight
+            chuteWidth >= 40 &&
+            targetHeight >= 25 &&
+            chuteWidth > targetHeight
           ) {
             const chuteArea = chuteWidth * targetHeight;
             if (chuteArea > bestChuteSize) {
@@ -260,30 +276,38 @@
           }
         }
 
-        // If no good fit found, use a more compact layout
+        // If no good fit found, adjust to ensure width > height
         if (bestChuteSize === 0) {
-          bestCols = Math.ceil(
-            Math.sqrt(NUM_CHUTES * (availableWidth / availableHeight))
-          );
+          // Start with more columns to ensure wider chutes
+          bestCols = Math.ceil(Math.sqrt(NUM_CHUTES * 1.5)); // Bias toward more columns
           bestRows = Math.ceil(NUM_CHUTES / bestCols);
 
-          const gapSize = 8; // Smaller gaps for compact layout
+          const gapSize = 6; // Smaller gaps for maximum space usage
           const totalGapWidth = (bestCols - 1) * gapSize;
           const totalGapHeight = (bestRows - 1) * gapSize;
 
           bestChuteWidth = Math.floor(
             (availableWidth - totalGapWidth) / bestCols
           );
-          const containerAspectRatio = availableWidth / availableHeight;
-          bestChuteHeight = Math.floor(bestChuteWidth / containerAspectRatio);
 
-          // If height doesn't fit, adjust based on available height
-          const maxHeight = Math.floor(
+          // Use full available height
+          bestChuteHeight = Math.floor(
             (availableHeight - totalGapHeight) / bestRows
           );
-          if (bestChuteHeight > maxHeight) {
-            bestChuteHeight = maxHeight;
-            bestChuteWidth = Math.floor(bestChuteHeight * containerAspectRatio);
+
+          // If width is not greater than height, increase columns until it is
+          while (bestChuteWidth <= bestChuteHeight && bestCols < NUM_CHUTES) {
+            bestCols++;
+            bestRows = Math.ceil(NUM_CHUTES / bestCols);
+            const newTotalGapWidth = (bestCols - 1) * gapSize;
+            const newTotalGapHeight = (bestRows - 1) * gapSize;
+
+            bestChuteWidth = Math.floor(
+              (availableWidth - newTotalGapWidth) / bestCols
+            );
+            bestChuteHeight = Math.floor(
+              (availableHeight - newTotalGapHeight) / bestRows
+            );
           }
 
           bestChuteSize = bestChuteWidth * bestChuteHeight;
@@ -291,19 +315,12 @@
           // Update gap size in CSS
           grid.style.gap = gapSize + "px";
         } else {
-          grid.style.gap = "10px";
+          grid.style.gap = "8px";
         }
 
-        // Ensure minimum size while maintaining aspect ratio
-        const containerAspectRatio = availableWidth / availableHeight;
-        if (bestChuteWidth < 60) {
-          bestChuteWidth = 60;
-          bestChuteHeight = Math.floor(bestChuteWidth / containerAspectRatio);
-        }
-        if (bestChuteHeight < 30) {
-          bestChuteHeight = 30;
-          bestChuteWidth = Math.floor(bestChuteHeight * containerAspectRatio);
-        }
+        // Ensure minimum readable size while maximizing space usage
+        bestChuteWidth = Math.max(bestChuteWidth, 40);
+        bestChuteHeight = Math.max(bestChuteHeight, 25);
 
         // Apply the calculated layout
         grid.style.gridTemplateColumns = `repeat(${bestCols}, ${bestChuteWidth}px)`;
