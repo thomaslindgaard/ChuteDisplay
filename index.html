@@ -366,22 +366,45 @@
         grid.style.justifyContent = "center";
         grid.style.alignContent = "center";
 
-        // Calculate font sizes based on chute dimensions - larger for rectangular chutes
-        const baseFontSize = Math.min(bestChuteWidth, bestChuteHeight) * 0.15;
-        const nameFontSize = Math.max(baseFontSize * 1.2, 12); // Larger font for chute names
-        const countFontSize = Math.max(baseFontSize, 10);
+        // Calculate font sizes based on chute dimensions - maximize count font size
+        const verticalPadding = Math.max(
+          Math.min(bestChuteWidth, bestChuteHeight) * 0.08,
+          6
+        );
+        const horizontalPadding = Math.max(
+          Math.min(bestChuteWidth, bestChuteHeight) * 0.04,
+          3
+        );
+        const availableCountHeight = bestChuteHeight - verticalPadding * 2;
+        const availableCountWidth = bestChuteWidth - horizontalPadding * 2;
+
+        // Calculate name font size to maximize horizontal space usage
+        const maxNameFontByWidth = Math.floor(availableCountWidth / 4.5); // More aggressive sizing for 6 characters (CHU001)
+        const maxNameFontByHeight = Math.floor(availableCountHeight * 0.25); // Use 25% of height for name
+        const nameFontSize = Math.max(
+          Math.min(maxNameFontByWidth, maxNameFontByHeight),
+          12
+        );
+        const nameHeight = nameFontSize * 1.2; // Approximate line height
+
+        // Calculate maximum count font size (uses remaining space)
+        const remainingHeight = availableCountHeight - nameHeight - 5; // 5px gap
+        const maxCountFontByHeight = Math.floor(remainingHeight * 0.8); // 80% of remaining height
+        const maxCountFontByWidth = Math.floor(availableCountWidth * 0.4); // 40% of width for 2-3 digits
+
+        // Use the smaller of the two constraints, with reasonable bounds
+        const countFontSize = Math.max(
+          Math.min(maxCountFontByHeight, maxCountFontByWidth),
+          12
+        );
 
         // Apply dynamic styles to all chute boxes
         const chuteBoxes = document.querySelectorAll(".chute-box");
         chuteBoxes.forEach((box) => {
           box.style.width = bestChuteWidth + "px";
           box.style.height = bestChuteHeight + "px";
-          box.style.padding =
-            Math.max(Math.min(bestChuteWidth, bestChuteHeight) * 0.08, 6) +
-            "px";
-          box.style.borderRadius =
-            Math.max(Math.min(bestChuteWidth, bestChuteHeight) * 0.08, 6) +
-            "px";
+          box.style.padding = `${verticalPadding}px ${horizontalPadding}px`;
+          box.style.borderRadius = Math.max(verticalPadding, 6) + "px";
 
           const nameEl = box.querySelector(".chute-name");
           const countEl = box.querySelector(".chute-count");
@@ -406,7 +429,7 @@
         const statuses = ["normal", "blocked", "full"];
 
         for (let i = 1; i <= NUM_CHUTES; i++) {
-          const chuteNumber = i.toString().padStart(4, "0");
+          const chuteNumber = i.toString().padStart(3, "0");
           const status = statuses[Math.floor(Math.random() * statuses.length)];
           const itemCount =
             status === "blocked" ? 0 : Math.floor(Math.random() * 100);
