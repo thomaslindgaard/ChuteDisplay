@@ -214,7 +214,11 @@
         const colsParam = urlParams.get("columns");
         if (colsParam) {
           const parsed = parseInt(colsParam);
-          if (parsed > 0 && parsed <= numChutes && parsed % 10 === 0) {
+          if (
+            parsed > 0 &&
+            parsed <= numChutes &&
+            (parsed % 10 === 0 || parsed % 5 === 0)
+          ) {
             columnsOverride = parsed;
           }
         }

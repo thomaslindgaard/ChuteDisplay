@@ -31,13 +31,14 @@ A real-time HTML-based display system for monitoring chute status on sorting equ
 You can customize the display using URL parameters:
 
 - **Number of Chutes**: `index.html?chutes=150`
-- **Column Override**: `index.html?columns=20` (must be divisible by 10)
+- **Column Override**: `index.html?columns=20` (must be divisible by 10 or 5)
 - **Combined Parameters**: `index.html?chutes=200&columns=20`
 - **Examples**:
   - `index.html` - Uses default 112 chutes with automatic layout
   - `index.html?chutes=80` - Shows exactly 80 chutes
   - `index.html?chutes=200&columns=10` - 200 chutes in 10 columns (20 rows)
-  - `index.html?columns=30` - Forces 30 columns regardless of chute count
+  - `index.html?columns=15` - Forces 15 columns (divisible by 5)
+  - `index.html?columns=30` - Forces 30 columns (divisible by 10)
 
 ### Layout Intelligence
 
