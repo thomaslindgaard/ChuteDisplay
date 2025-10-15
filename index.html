@@ -195,22 +195,37 @@
     </div>
 
     <script>
-      // Get number of chutes from URL parameter or use default
-      function getNumChutesFromURL() {
+      // Get configuration from URL parameters
+      function getConfigFromURL() {
         const urlParams = new URLSearchParams(window.location.search);
+
+        // Get number of chutes
+        let numChutes = 112; // Default
         const chuteParam = urlParams.get("chutes");
         if (chuteParam) {
-          const numChutes = parseInt(chuteParam);
-          if (numChutes > 0 && numChutes <= 1000) {
-            // Reasonable limits
-            return numChutes;
+          const parsed = parseInt(chuteParam);
+          if (parsed > 0 && parsed <= 1000) {
+            numChutes = parsed;
           }
         }
-        return 112; // Default value
+
+        // Get number of columns override
+        let columnsOverride = null;
+        const colsParam = urlParams.get("columns");
+        if (colsParam) {
+          const parsed = parseInt(colsParam);
+          if (parsed > 0 && parsed <= numChutes && parsed % 10 === 0) {
+            columnsOverride = parsed;
+          }
+        }
+
+        return { numChutes, columnsOverride };
       }
 
       // Configuration
-      const NUM_CHUTES = getNumChutesFromURL();
+      const config = getConfigFromURL();
+      const NUM_CHUTES = config.numChutes;
+      const COLUMNS_OVERRIDE = config.columnsOverride;
 
       // Calculate optimal grid layout based on screen size and number of chutes
       function calculateGridLayout() {
@@ -240,8 +255,31 @@
         let bestChuteWidth = 0;
         let bestChuteHeight = 0;
 
+        // Use column override if specified, otherwise try different configurations
+        let columnsToTry;
+        if (COLUMNS_OVERRIDE) {
+          columnsToTry = [COLUMNS_OVERRIDE];
+        } else {
+          // Prioritize columns divisible by 10, then by 5, then all others
+          const divisibleBy10 = [];
+          const divisibleBy5 = [];
+          const others = [];
+
+          for (let i = 1; i <= NUM_CHUTES; i++) {
+            if (i % 10 === 0) {
+              divisibleBy10.push(i);
+            } else if (i % 5 === 0) {
+              divisibleBy5.push(i);
+            } else {
+              others.push(i);
+            }
+          }
+
+          columnsToTry = [...divisibleBy10, ...divisibleBy5, ...others];
+        }
+
         // Try different column configurations to find the best fit
-        for (let cols = 1; cols <= NUM_CHUTES; cols++) {
+        for (const cols of columnsToTry) {
           const rows = Math.ceil(NUM_CHUTES / cols);
 
           // Calculate chute dimensions for this configuration
@@ -355,6 +393,11 @@
         console.log(
           `Grid: ${bestCols}x${bestRows}, Chute size: ${bestChuteWidth}x${bestChuteHeight}px, Total chutes: ${NUM_CHUTES}`
         );
+        if (COLUMNS_OVERRIDE) {
+          console.log(`Using column override: ${COLUMNS_OVERRIDE} columns`);
+        } else {
+          console.log(`Automatically calculated layout for optimal display`);
+        }
       }
 
       // Generate chute data with random statuses and counts for demonstration
